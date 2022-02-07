@@ -591,19 +591,22 @@ describe('Module 7', () => {
       const parent = {};
       const func = {};
 
-      walk.findNodeAt(res, null, null, (nodeType, node) => {
-        if (
-          nodeType === 'CallExpression' &&
-          _.get(node, 'callee.object.callee.object.callee.name', '') ===
-            'getBooksOrMoviesAsync'
-        ) {
-          parent.node = node;
-        }
+      walk.ancestor(res, {
+        CallExpression(node, ancestors) {
+          if (_.get(node, 'callee.name', '') === 'getBooksOrMoviesAsync') {
+            ancestors.map(val => {
+              if (
+                val.type === 'CallExpression' &&
+                _.get(val, 'arguments[0].params[0].name', '') === 'results'
+              )
+                parent.node = val;
+            });
+          }
+        },
       });
 
       walk.ancestor(parent.node, {
-        ArrowFunctionExpression(node, ancestors) {
-          // ancestors.map(val => console.dir(val, { depth: 8 }));
+        ArrowFunctionExpression(node) {
           if (_.get(node, 'params[0].name', '') === 'results') {
             func.raceThenNode = node;
           }
@@ -614,7 +617,7 @@ describe('Module 7', () => {
         CallExpression(node) {
           func.raceThenBody = node;
         },
-      });
+      });      
 
       // Using console.log
       expect(_.get(func.raceThenBody, 'callee.object.name', '')).to.equal(
